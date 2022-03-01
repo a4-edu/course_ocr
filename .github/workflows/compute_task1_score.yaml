@@ -3,8 +3,7 @@ name: Compute taks3 score
 on: [push]
 
 jobs:
-  build:
-
+  evaluate:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,6 +23,6 @@ jobs:
       - name: Install task1 package
         run: |
           pip install -e task1/
-      - name: Compute Score
+      - name: COMPUTE SCORE
         run: |
           python -m course_ocr_t1.metrics ${{ github.actor }}
