@@ -21,6 +21,8 @@ def iou_relative_quads(quad1, quad2):
         [1, 1],
         [1, 0]
     ])
+    if not (quad1.is_valid and quad2.is_valid):
+        return 0.0
     try:
         return (quad1 & quad2 & frame).area  / ((quad1 | quad2) & frame).area
     except Exception as exc:
@@ -65,3 +67,15 @@ def measure_crop_accuracy(
     ious = np.array(ious)
     accuracy = (ious > iou_thr).astype(int).sum() / len(ious)
     return accuracy
+
+
+def _run_evaluation():
+    base = Path(__file__).absolute().parent.parent
+    gt_path = base / 'gt.json'
+    pred_path = base / 'pred.json'
+    score = measure_crop_accuracy(pred_path, gt_path)
+    print("Accuracy[IoU>0.95] = {:1.4f}".format(score))
+
+
+if __name__ == "__main__":
+    _run_evaluation()
