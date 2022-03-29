@@ -1,0 +1,28 @@
+name: Compute taks2 score
+
+on: [push]
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest numpy
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Install task2 package
+        run: |
+          pip install -e task2/
+      - name: COMPUTE SCORE
+        run: |
+          python -m course_ocr_t2.evaluate ${{ github.actor }}
