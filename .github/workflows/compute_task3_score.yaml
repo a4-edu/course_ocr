@@ -1,4 +1,4 @@
-name: Compute task1 score
+name: Compute task3 score
 
 on: [push]
 
@@ -18,11 +18,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest numpy
+          pip install flake8 pytest numpy shapely
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Install task1 package
+      - name: Install task3 package
         run: |
-          pip install -e task1/
+          pip install -e task3/
       - name: COMPUTE SCORE
         run: |
-          python -m course_ocr_t1.metrics ${{ github.actor }}
+          python -m course_ocr_t3.evaluate ${{ github.actor }}
