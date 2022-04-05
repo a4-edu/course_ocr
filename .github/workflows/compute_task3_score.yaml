@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest numpy shapely csv
+          pip install flake8 pytest numpy shapely
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Install task3 package
         run: |
