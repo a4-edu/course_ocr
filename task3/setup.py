@@ -10,10 +10,10 @@ setup(
     version='0.1.0',
     python_requires='>=3.7.0',
     packages=[''],
-    description='Task3 for ABBYY OCR course',
+    description='Task 3 for OCR course',
     url='',
     author='Dmitry Zvonarev',
-    author_email='dmitry.zvonarev@abbyy.com',
+    author_email='dmitry.zvonorev@phystech.edu',
     install_requires=['shapely'],
     classifiers=[
         'Development Status :: 3 - Alpha',
