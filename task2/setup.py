@@ -7,13 +7,13 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='course_ocr_t2',
-    version='0.1.0',
+    version='0.1.1',
     python_requires='>=3.7.0',
     packages=[''],
-    description='Task2 for ABBYY OCR course',
+    description='Task2 for MIPT OCR course',
     url='',
     author='Andrei Upshinskii',
-    author_email='andrew.upshinskiy@abbyy.com',
+    author_email='egiby.a@gmail.com',
     install_requires=[],
     classifiers=[
         'Development Status :: 3 - Alpha',
