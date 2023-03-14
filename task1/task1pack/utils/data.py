@@ -11,10 +11,11 @@ from torchvision.transforms import functional as F
 
 
 class HeatmapDataset(VisionDataset):
-    def __init__(self, data_packs, split='train', transforms=None):
+    def __init__(self, data_packs, split='train', transforms=None, output_size=(100, 100)):
         self.data_packs = data_packs
         self.indices = []
         self.transforms = transforms
+        self.output_size = output_size
 
         for dp_idx, dp in enumerate(data_packs):
             for im_idx, im in enumerate(dp):
@@ -31,7 +32,7 @@ class HeatmapDataset(VisionDataset):
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         dp_idx, im_idx = self.indices[index]
         image = np.array(self.data_packs[dp_idx][im_idx].image.convert('RGB'))
-        target = torch.FloatTensor(self.data_packs[dp_idx][im_idx].quadrangle)
+        target = torch.FloatTensor(self.data_packs[dp_idx][im_idx].quadrangle) * self.output_size[0]
 
         if self.transforms is not None:
             image = self.transforms(image)
