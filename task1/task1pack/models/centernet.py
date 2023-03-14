@@ -200,8 +200,8 @@ class CenterNetHead(nn.Module):
     def forward(self, input_t: torch.Tensor):
         class_heatmap = self.probs_head(input_t)
 
-        x_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-2])] for idx in range(class_heatmap.shape[-1])])
-        y_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-1])] for idx in range(class_heatmap.shape[-2])])
+        x_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-2])] for idx in range(class_heatmap.shape[-1])]).to(class_heatmap.device)
+        y_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-1])] for idx in range(class_heatmap.shape[-2])]).to(class_heatmap.device)
 
         x_mass_center = (class_heatmap * x_coordmap).sum(dim=[-1, -2]) / class_heatmap.shape[-2]
         y_mass_center = (class_heatmap * y_coordmap).sum(dim=[-1, -2]) / class_heatmap.shape[-1]

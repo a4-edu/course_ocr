@@ -13,7 +13,7 @@ from torchvision.transforms import functional as F
 DEFAULT_IMAGE_SIZE = (256, 256)
 
 
-def train(dataset, *, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, device=None):
+def train(dataset, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, device=None):
     if device is not None:
         net.to(device)
     optimizer = optim.Adam(net.parameters(), lr=lr)
