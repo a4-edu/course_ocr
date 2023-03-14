@@ -2,8 +2,12 @@
 Здесь находится backbone на основе resnet-18, в статье "Objects as Points" он описан в
 5.Implementation details/Resnet и в Figure 6-b.
 """
+from typing import Tuple
+
+import torch
 from torch import nn
 from torchvision.models import resnet18, resnet34
+import torch.nn.functional as F
 
 
 class HeadlessPretrainedResnet18Encoder(nn.Module):
@@ -164,4 +168,58 @@ class ResnetBackbone(nn.Module):
         x = self.downscale(x)
         x = self.upscale(x)
         return x
+    
 
+class CenterNetHead(nn.Module):
+    """
+    Принимает на вход тензор из Backbone input[B, K, W/R, H/R], где
+    - B = batch_size
+    - K = количество каналов (в ResnetBackbone K = 64)
+    - H, W = размеры изображения на вход Backbone
+    - R = output stride, т.е. во сколько раз featuremap меньше, чем исходное изображение
+      (в ResnetBackbone R = 4)
+
+    Возвращает тензора [B, C, W/R, H/R]:
+    - первые C каналов: probs[B, С, W/R, H/R] - вероятности от 0 до 1
+    """
+    def __init__(self, k_in_channels=64, c_classes: int = 2):
+        super().__init__()
+        self.c_classes = c_classes
+        
+        self.probs_head = nn.Sequential(
+            nn.Conv2d(k_in_channels, k_in_channels,
+                kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(k_in_channels, c_classes, 
+                kernel_size=1, stride=1, 
+                padding=0),
+            #nn.Softmax(dim=-1)
+            nn.Sigmoid()
+            )
+
+    def forward(self, input_t: torch.Tensor):
+        class_heatmap = self.probs_head(input_t)
+
+        x_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-2])] for idx in range(class_heatmap.shape[-1])])
+        y_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-1])] for idx in range(class_heatmap.shape[-2])])
+
+        x_mass_center = (class_heatmap * x_coordmap).sum(dim=[-1, -2]) / class_heatmap.shape[-2]
+        y_mass_center = (class_heatmap * y_coordmap).sum(dim=[-1, -2]) / class_heatmap.shape[-1]
+
+        return torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
+
+
+class CenterNet(nn.Module):
+    """
+    Детектор объектов из статьи 'Objects as Points': https://arxiv.org/pdf/1904.07850.pdf
+    """
+    def __init__(self, pretrained="resnet18", head_kwargs={}):
+        super().__init__()
+        self.backbone = ResnetBackbone(pretrained)
+        self.head = CenterNetHead(**head_kwargs)
+
+    def forward(self, input_t):
+        x = input_t
+        x = self.backbone(x)
+        x = self.head(x)
+        return x

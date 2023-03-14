@@ -10,21 +10,10 @@ from torchvision import transforms
 from torchvision.datasets import CocoDetection
 from torchvision.transforms import functional as F
 
-from abbyy_course_cvdl_t2.network import CenterNet
-from abbyy_course_cvdl_t2.loss import CenterNetLoss
-
-from abbyy_course_cvdl_t2.impl.data import CocoDetection, CocoTextDetection, CocoDetectionPrepareTransform
-
 DEFAULT_IMAGE_SIZE = (256, 256)
 
 
-def train(dataset, *, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, image_size=DEFAULT_IMAGE_SIZE, device=None):
-    assert image_size == DEFAULT_IMAGE_SIZE
-    if net is None:
-        net = CenterNet(pretrained=True)
-    if criterion is None:
-        criterion = CenterNetLoss()
-
+def train(dataset, *, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, device=None):
     if device is not None:
         net.to(device)
     optimizer = optim.Adam(net.parameters(), lr=lr)
@@ -49,22 +38,17 @@ def train(dataset, *, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20
                 anno = anno.to(device)
             optimizer.zero_grad()
             outputs = net(inputs)
-            losses = criterion(outputs, anno).mean(axis=0)
-            loss_value = losses.sum()
-            if torch.isnan(loss_value).any():
+            loss = criterion(outputs, anno)
+            if torch.isnan(loss).any():
                 warnings.warn("nan loss! skip update")
-                print(f"last loss: {[l.item() for l in losses]}")
-                torch.save(anno.cpu(), 'anno.pt')
-                torch.save(inputs.cpu().numpy(), 'inputs.pt')
-                torch.save(outputs.detach().cpu().numpy(), 'outputs.pt')
-                #continue
+                print(f"last loss: {loss}")
                 break
-            running_loss += loss_value
+            running_loss += loss
             if (i % stats_step == 0):
                 print(f"epoch {epoch}|{i}; total loss:{running_loss / stats_step}")
-                print(f"last losses: {[l.item() for l in losses.flatten()]}")
+                print(f"last losse: {loss}")
                 running_loss = 0.0
-            loss_value.backward()
+            loss.backward()
             optimizer.step()
     print('Finished Training')
     return net
