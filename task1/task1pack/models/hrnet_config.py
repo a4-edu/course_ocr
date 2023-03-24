@@ -1,11 +1,11 @@
 cfg = {
     'MODEL': {
         'NAME': 'pose_hrnet',
-        'INIT_WEIGHTS': True,
+        'INIT_WEIGHTS': False,
         'PRETRAINED': '',
-        'NUM_CORNERS': 17,
-        'IMAGE_SIZE': [400, 400],
-        'HEATMAP_SIZE': [100, 100],
+        'NUM_CORNERS': 4,
+        'IMAGE_SIZE': [512, 512],
+        'HEATMAP_SIZE': [128, 128],
         'EXTRA': {
             'PRETRAINED_LAYERS': ['*'],
             'STEM_INPLANES': 64,
