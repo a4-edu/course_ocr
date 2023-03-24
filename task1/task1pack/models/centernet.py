@@ -203,8 +203,8 @@ class CenterNetHead(nn.Module):
         x_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-2])] for idx in range(class_heatmap.shape[-1])]).to(class_heatmap.device)
         y_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-1])] for idx in range(class_heatmap.shape[-2])]).to(class_heatmap.device)
 
-        x_mass_center = (class_heatmap * x_coordmap).sum(dim=[-1, -2])# / class_heatmap.shape[-2]
-        y_mass_center = (class_heatmap * y_coordmap).sum(dim=[-1, -2])# / class_heatmap.shape[-1]
+        x_mass_center = (class_heatmap * x_coordmap).sum(dim=[-1, -2]) / class_heatmap.sum(dim=[-1, -2])# / class_heatmap.shape[-2]
+        y_mass_center = (class_heatmap * y_coordmap).sum(dim=[-1, -2]) / class_heatmap.sum(dim=[-1, -2])# / class_heatmap.shape[-1]
 
         return torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
 
