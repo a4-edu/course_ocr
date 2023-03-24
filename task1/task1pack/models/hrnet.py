@@ -8,6 +8,7 @@ import os
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 BN_MOMENTUM = 0.1
@@ -248,10 +249,8 @@ class HighResolutionModule(nn.Module):
             y = x[0] if i == 0 else self.fuse_layers[i][0](x[0])
             for j in range(1, self.num_branches):
                 if i == j:
-                    print(y.shape, x[j].shape)
                     y = y + x[j]
                 else:
-                    print(y.shape, x[j].shape, self.fuse_layers[i][j](x[j]).shape)
                     y = y + self.fuse_layers[i][j](x[j])
             x_fuse.append(self.relu(y))
 
@@ -270,6 +269,9 @@ class PoseHighResolutionNet(nn.Module):
         self.inplanes = 64
         extra = cfg['MODEL']['EXTRA']
         super(PoseHighResolutionNet, self).__init__()
+
+        self.IMAGE_SIZE = cfg['MODEL']['IMAGE_SIZE']
+        self.HEATMAP_SIZE = cfg['MODEL']['HEATMAP_SIZE']
 
         # stem net
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1,
@@ -450,7 +452,18 @@ class PoseHighResolutionNet(nn.Module):
 
         x = self.final_layer(y_list[0])
 
-        return x
+        x = F.sigmoid(x)
+
+        x_coordmap = torch.Tensor([[idx for _ in range(x.shape[-2])] for idx in range(x.shape[-1])]).to(x.device)
+        y_coordmap = torch.Tensor([[idx for _ in range(x.shape[-1])] for idx in range(x.shape[-2])]).to(x.device)
+
+        x_mass_center = (x * x_coordmap).sum(dim=[-1, -2]) / x.sum(dim=[-1, -2])# / class_heatmap.shape[-2]
+        y_mass_center = (x * y_coordmap).sum(dim=[-1, -2]) / x.sum(dim=[-1, -2])# / class_heatmap.shape[-1]
+
+        mass_center = torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
+
+        return mass_center, x
+    
 
     def init_weights(self, pretrained=''):
         for m in self.modules():

@@ -11,7 +11,7 @@ from torchvision.transforms import functional as F
 
 
 class HeatmapDataset(VisionDataset):
-    def __init__(self, data_packs, split='train', transforms=None, output_size=(100, 100)):
+    def __init__(self, data_packs, split='train', transforms=None, output_size=(128, 128)):
         self.data_packs = data_packs
         self.indices = []
         self.transforms = transforms
