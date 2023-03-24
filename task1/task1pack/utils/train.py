@@ -6,14 +6,14 @@ import numpy as np
 import torch
 from torch import optim as optim
 
-from torchvision import transforms
-from torchvision.datasets import CocoDetection
 from torchvision.transforms import functional as F
 
 DEFAULT_IMAGE_SIZE = (256, 256)
 
 
 def train(dataset, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, device=None):
+    train_loss = []
+
     if device is not None:
         net.to(device)
     optimizer = optim.Adam(net.parameters(), lr=lr)
@@ -50,6 +50,7 @@ def train(dataset, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, d
                 running_loss = 0.0
             loss.backward()
             optimizer.step()
+            train_loss.append(running_loss / stats_step)
     print('Finished Training')
-    return net
+    return net, train_loss
 
