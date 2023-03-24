@@ -462,7 +462,7 @@ class PoseHighResolutionNet(nn.Module):
 
         mass_center = torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
 
-        return mass_center, x
+        return mass_center
     
 
     def init_weights(self, pretrained=''):
