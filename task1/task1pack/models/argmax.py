@@ -62,10 +62,6 @@ class SpatialSoftArgmax(nn.Module):
         x_mean = (softmax * xc.flatten()).sum(dim=1, keepdims=True)
         y_mean = (softmax * yc.flatten()).sum(dim=1, keepdims=True)
 
-        if not self.training:
-            x_mean /= h
-            y_mean /= w
-
         # concatenate and reshape the result
         # to (B, C*2) where for every feature
         # we have the expected x and y pixel
