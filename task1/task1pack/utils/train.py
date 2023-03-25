@@ -53,4 +53,3 @@ def train(dataset, net=None, criterion=None, batch_size=8, lr=3e-4, epochs=20, d
             train_loss.append(running_loss / stats_step)
     print('Finished Training')
     return net, train_loss
-

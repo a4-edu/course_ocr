@@ -9,6 +9,7 @@ from torch import nn
 from torchvision.models import resnet18, resnet34
 import torch.nn.functional as F
 
+from .argmax import SpatialSoftArgmax
 
 class HeadlessPretrainedResnet18Encoder(nn.Module):
     """
@@ -185,6 +186,8 @@ class CenterNetHead(nn.Module):
     def __init__(self, k_in_channels=64, c_classes: int = 2):
         super().__init__()
         self.c_classes = c_classes
+
+        self.soft_argmax = SpatialSoftArgmax()
         
         self.probs_head = nn.Sequential(
             nn.Conv2d(k_in_channels, k_in_channels,
@@ -193,20 +196,23 @@ class CenterNetHead(nn.Module):
             nn.Conv2d(k_in_channels, c_classes, 
                 kernel_size=1, stride=1, 
                 padding=0),
-            #nn.Softmax(dim=-1)
-            nn.Sigmoid()
+            #nn.Sigmoid()
             )
+
+
 
     def forward(self, input_t: torch.Tensor):
         class_heatmap = self.probs_head(input_t)
 
-        x_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-2])] for idx in range(class_heatmap.shape[-1])]).to(class_heatmap.device)
-        y_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-1])] for idx in range(class_heatmap.shape[-2])]).to(class_heatmap.device)
+        #x_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-2])] for idx in range(class_heatmap.shape[-1])]).to(class_heatmap.device)
+        #y_coordmap = torch.Tensor([[idx for _ in range(class_heatmap.shape[-1])] for idx in range(class_heatmap.shape[-2])]).to(class_heatmap.device)
 
-        x_mass_center = (class_heatmap * x_coordmap).sum(dim=[-1, -2]) / class_heatmap.sum(dim=[-1, -2])# / class_heatmap.shape[-2]
-        y_mass_center = (class_heatmap * y_coordmap).sum(dim=[-1, -2]) / class_heatmap.sum(dim=[-1, -2])# / class_heatmap.shape[-1]
+        #x_mass_center = (class_heatmap * x_coordmap).sum(dim=[-1, -2]) / class_heatmap.sum(dim=[-1, -2])# / class_heatmap.shape[-2]
+        #y_mass_center = (class_heatmap * y_coordmap).sum(dim=[-1, -2]) / class_heatmap.sum(dim=[-1, -2])# / class_heatmap.shape[-1]
 
-        return torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
+        #return torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
+
+        return self.soft_argmax(class_heatmap)
 
 
 class CenterNet(nn.Module):
