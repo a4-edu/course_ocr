@@ -59,8 +59,8 @@ class SpatialSoftArgmax(nn.Module):
         # with the softmax, then sum over the h*w dimension
         # this effectively computes the weighted mean of x
         # and y locations
-        x_mean = (softmax * xc.flatten()).sum(dim=1, keepdims=True)
-        y_mean = (softmax * yc.flatten()).sum(dim=1, keepdims=True)
+        x_mean = (softmax * xc.flatten()).sum(dim=1, keepdims=True) / h
+        y_mean = (softmax * yc.flatten()).sum(dim=1, keepdims=True) / w
 
         # concatenate and reshape the result
         # to (B, C*2) where for every feature

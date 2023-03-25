@@ -34,8 +34,6 @@ class HeatmapDataset(VisionDataset):
         dp_idx, im_idx = self.indices[index]
         image = np.array(self.data_packs[dp_idx][im_idx].image.convert('RGB'))
         target = torch.FloatTensor(self.data_packs[dp_idx][im_idx].quadrangle) 
-        if self.split == 'train':
-            target *= self.output_size[0]
 
         if self.transforms is not None:
             image = self.transforms(image)
