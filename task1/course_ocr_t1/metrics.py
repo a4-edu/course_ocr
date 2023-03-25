@@ -65,7 +65,6 @@ def measure_crop_accuracy(
         else:
             ious.append(0)
     ious = np.array(ious)
-    print(ious.mean())
     accuracy = (ious > iou_thr).astype(int).sum() / len(ious)
     return accuracy
 

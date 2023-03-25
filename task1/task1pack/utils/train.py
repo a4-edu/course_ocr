@@ -10,7 +10,6 @@ from torchvision.transforms import functional as F
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
-
 def show_train_plots(train_losses, test_losses, title):
     plt.figure()
     n_epochs = len(test_losses) - 1
@@ -28,14 +27,18 @@ def show_train_plots(train_losses, test_losses, title):
 def train(model, train_loader, optimizer, criterion, device):
     model.train()
     train_losses = []
+
     for x, target in train_loader:
         x, target = x.to(device), target.to(device)
         prediction = model(x)
         loss = criterion(prediction, target)
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
         train_losses.append(loss.item())
+
     return train_losses
 
 
@@ -52,28 +55,50 @@ def eval_loss(model, data_loader, criterion, device):
     return avg_loss.item()
 
 
-def train_epochs(model, train_loader, test_loader, train_args, criterion, device):
+def train_epochs(model, train_loader, test_loader, train_args, criterion, device, wandb_instance=None):
     epochs, lr = train_args['epochs'], train_args['lr']
     optimizer = optim.Adam(model.parameters(), lr=lr)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=train_args['step_size'], gamma=train_args['gamma'])
 
     train_losses = []
     test_losses = [eval_loss(model, test_loader, criterion, device)]
 
     print('initial loss {}'.format(test_losses[-1]))
+    if wandb_instance is not None:
+        wandb_instance.log({
+            'val': {
+                'loss': test_losses[-1],
+            },
+        }, step=0)
 
     for epoch in range(epochs):
         print(f'epoch {epoch} started')
+
         model.train()
-        train_losses.extend(train(model, train_loader, optimizer, criterion, device))
+        train_loss = train(model, train_loader, optimizer, criterion, device)        
         test_loss = eval_loss(model, test_loader, criterion, device)
+
+        scheduler.step()
+
+        train_losses.extend(train_loss)
         test_losses.append(test_loss)
-        print('train loss: {}, test_loss: {}'.format(np.mean(train_losses[-1000:]), 
+        print('train loss: {}, test_loss: {}'.format(np.mean(train_loss), 
                                                      test_losses[-1]))
+        if wandb_instance is not None:
+            wandb_instance.log({
+                'val': {
+                    'loss': test_losses[-1],
+                },
+                'train': {
+                    'loss': np.mean(train_loss),
+                },
+                'lr': scheduler.get_last_lr(),
+            }, step=epoch+1)
 
     return train_losses, test_losses
 
 
-def train_model(train_dataset, test_dataset, model, criterion, device, train_dataloader_kwargs, test_dataloader_kwargs, training_kwargs):
+def train_model(train_dataset, test_dataset, model, criterion, device, train_dataloader_kwargs, test_dataloader_kwargs, training_kwargs, wandb_instance=None):
     """
     train_data: A (n_train, H, W, 1) uint8 numpy array of binary images with values in {0, 1}
     test_data: A (n_test, H, W, 1) uint8 numpy array of binary images with values in {0, 1}
@@ -88,8 +113,7 @@ def train_model(train_dataset, test_dataset, model, criterion, device, train_dat
     train_dataloader = DataLoader(train_dataset, **train_dataloader_kwargs)
     test_dataloader = DataLoader(test_dataset, **test_dataloader_kwargs)
 
-
-    train_loss, test_loss = train_epochs(model, train_dataloader, test_dataloader, training_kwargs, criterion, device)
+    train_loss, test_loss = train_epochs(model, train_dataloader, test_dataloader, training_kwargs, criterion, device, wandb_instance=wandb_instance)
 
     return np.array(train_loss), np.array(test_loss), model
     
