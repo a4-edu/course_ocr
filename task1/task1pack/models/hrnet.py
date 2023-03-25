@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .argmax import SpatialSoftArgmax
+
 
 BN_MOMENTUM = 0.1
 
@@ -273,6 +275,9 @@ class PoseHighResolutionNet(nn.Module):
         self.IMAGE_SIZE = cfg['MODEL']['IMAGE_SIZE']
         self.HEATMAP_SIZE = cfg['MODEL']['HEATMAP_SIZE']
 
+        # soft argmax
+        self.soft_argmax = SpatialSoftArgmax()
+
         # stem net
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
@@ -452,15 +457,7 @@ class PoseHighResolutionNet(nn.Module):
 
         x = self.final_layer(y_list[0])
 
-        x = F.sigmoid(x)
-
-        x_coordmap = torch.Tensor([[idx for _ in range(x.shape[-2])] for idx in range(x.shape[-1])]).to(x.device)
-        y_coordmap = torch.Tensor([[idx for _ in range(x.shape[-1])] for idx in range(x.shape[-2])]).to(x.device)
-
-        x_mass_center = (x * x_coordmap).sum(dim=[-1, -2]) / x.sum(dim=[-1, -2])# / class_heatmap.shape[-2]
-        y_mass_center = (x * y_coordmap).sum(dim=[-1, -2]) / x.sum(dim=[-1, -2])# / class_heatmap.shape[-1]
-
-        mass_center = torch.cat([x_mass_center[..., None], y_mass_center[..., None]], dim=-1)
+        mass_center = self.soft_argmax(x)
 
         return mass_center
     
