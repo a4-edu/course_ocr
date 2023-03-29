@@ -5,6 +5,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from collections import defaultdict, Counter
+import lmdb
 
 
 class Vocabulary:
@@ -40,6 +41,47 @@ class ArchivedHWDBReader:
     
     def close(self):
         self.archive.close()
+    
+    def __enter__(self):
+        self.open()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+
+GB = 2**30
+class LMDBReader:
+    def __init__(self, path: Path):
+        self.path = path
+        self.env = None
+        self.namelist_ = []
+    
+    def open(self):
+        self.env = lmdb.open(self.path, 
+                             map_size=GB * 16,
+                             lock=False, 
+                             subdir=False, 
+                             readonly=True)
+        self.namelist_ = []
+        with self.env.begin(buffers=True) as txn:
+            cursor = txn.cursor()
+            for key, _ in cursor:
+                key = bytes(key).decode('utf-8')
+                self.namelist_.append(key)
+    
+    def namelist(self):
+        return self.namelist_
+    
+    def decode_image(self, name):
+        key = name.encode('utf-8')
+        with self.env.begin() as txn:
+            sample = txn.get(key)
+        buf = np.frombuffer(sample, dtype='uint8')
+        return cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
+    
+    def close(self):
+        self.env.close()
     
     def __enter__(self):
         self.open()
