@@ -18,11 +18,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest numpy
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install flake8 pytest numpy
+          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
       - name: Install task1 package
         run: |
-          pip install -e task1/
+          python -m pip install -e task1/
       - name: COMPUTE SCORE
         run: |
           python -m course_ocr_t1.metrics ${{ github.actor }}
