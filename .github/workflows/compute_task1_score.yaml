@@ -23,7 +23,8 @@ jobs:
       - name: Install task1 package
         run: |
           python -m pip install task1/
-          python -c "import course_ocr_1"
+          pyhon -m pip freeze
+          python -c "import course_ocr_1; print('ok!')"
           python -m course_ocr_t1.metrics ${{ github.actor }}
       - name: COMPUTE SCORE
         run: |
