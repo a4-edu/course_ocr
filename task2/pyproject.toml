@@ -1,0 +1,23 @@
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.8.0,<4"]
+
+[project]
+name = "course_ocr_t2"
+version = "0.1.2"
+authors = [
+    {name = "Andrei Upshinskii", email = "egiby.a@gmail.com"},
+]
+description = "Task2 for ABBYY OCR course."
+requires-python = ">=3.7"
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: End Users/Desktop',
+    'Intended Audience :: Science/Research',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3 :: Only',
+    'Topic :: Scientific/Engineering'
+]
+dependencies = [
+    "numpy",
+]
