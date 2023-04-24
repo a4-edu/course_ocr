@@ -9,7 +9,7 @@ setup(
     name='course_ocr_t1',
     version='0.1.0',
     python_requires='>=3.7.0',
-    packages=[''],
+    packages=['course_ocr_t1'],
     description='Task1 for ABBYY OCR course',
     url='',
     author='Boris Zimka',
