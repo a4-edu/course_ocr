@@ -22,7 +22,6 @@ def read_file(path):
 	markup = {}
 	with open(path, 'r', encoding='utf-16') as fd:
 		rd = csv.reader(fd)
-		next(rd)
 		for row in rd:
 			id = row[0]
 			value = row[1]
