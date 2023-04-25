@@ -14,7 +14,7 @@
 ## Данные
 Все данные можно найти здесь:
 
-https://disk.yandex.ru/d/jDHaZybixnsDYQ
+https://disk.yandex.ru/d/Kp7OTa2TbMBh8w
 
 Train - директория с данными для обучения:
 
