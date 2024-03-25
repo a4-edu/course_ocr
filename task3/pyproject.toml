@@ -8,7 +8,7 @@ version = "0.1.1"
 authors = [
     {name = "Dmitry Zvonarev", email = "dmitry.zvonorev@phystech.edu"},
 ]
-description = "Task3 for ABBYY OCR course."
+description = "Task3 for OCR course."
 requires-python = ">=3.7"
 classifiers = [
     'Development Status :: 3 - Alpha',
