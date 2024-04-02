@@ -1,53 +1,7 @@
-from itertools import permutations
-import zipfile
-from typing import Optional, List
 from pathlib import Path
 import cv2
 import numpy as np
-from collections import defaultdict, Counter
 import lmdb
-
-
-class Vocabulary:
-    def __init__(self, classes):
-        self.classes = sorted(set(classes))
-        self._class_to_index = dict((cls, idx) for idx, cls in enumerate(self.classes))
-    
-    def class_by_index(self, idx: int) -> str:
-        return self.classes[idx]
-
-    def index_by_class(self, cls: str) -> int:
-        return self._class_to_index[cls]
-    
-    def num_classes(self) -> int:
-        return len(self.classes)
-
-
-class ArchivedHWDBReader:
-    def __init__(self, path: Path):
-        self.path = path
-        self.archive = None
-    
-    def open(self):
-        self.archive = zipfile.ZipFile(self.path)
-    
-    def namelist(self):
-        return self.archive.namelist()
-    
-    def decode_image(self, name):
-        sample = self.archive.read(name)
-        buf = np.asarray(bytearray(sample), dtype='uint8')
-        return cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
-    
-    def close(self):
-        self.archive.close()
-    
-    def __enter__(self):
-        self.open()
-        return self
-    
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
 
 
 GB = 2**30
@@ -78,7 +32,8 @@ class LMDBReader:
         with self.env.begin() as txn:
             sample = txn.get(key)
         buf = np.frombuffer(sample, dtype='uint8')
-        return cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
+        img = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+        return img
     
     def close(self):
         self.env.close()
@@ -91,54 +46,57 @@ class LMDBReader:
         self.close()
 
 
-class HWDBDatasetHelper:
-    def __init__(self, reader, prefix='Train', vocabulary: Optional[Vocabulary]=None, namelist: Optional[List[str]]=None):
+provinces = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "京", "闽", "赣", "鲁", 
+             "豫", "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "警", "学", "O"]
+alphabets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+             'X', 'Y', 'Z', 'O']
+ads = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+       'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'O']
+
+
+def parse_gtruth(raw: str) -> str:
+    # 0_0_22_27_27_33_16
+    ids = [int(part) for part in raw.split('_')]
+    province = provinces[ids[0]]
+    first = alphabets[ids[1]]
+    rest = [ads[x] for x in ids[2:]]
+    return ''.join([province, first] + rest)
+
+
+def parse_coords(raw: str) -> str:
+    # 580&528_404&533_404&465_580&460
+    parts = raw.split('_')
+    coords = [tuple(map(int, part.split('&'))) for part in parts]
+    return coords
+
+
+def parse_meta(path: str):
+    if path[-3:] == 'jpg':
+        path = path[:-4]
+    parts = path.split('-')
+    idx = parts[0]
+    coords = parse_coords(parts[3])
+    gtruth = parse_gtruth(parts[4])
+    return idx, coords, gtruth
+
+
+class CCPDHelper:
+    def __init__(self, reader: LMDBReader, namelist=None):
         self.reader = reader
-        self.prefix = prefix
-        self.index = defaultdict(list)
-        self.counter = Counter()
-        self.namelist = namelist
-        if self.namelist is None:
-            self.namelist = list(filter(lambda x: self.prefix in x, self.reader.namelist()))
-        self.vocabulary = vocabulary
-        self._build_index()
-    
-    def get_item(self, idx):
+        self.namelist = namelist if namelist is not None else reader.namelist()
+
+    def item(self, idx: int):
+        """
+        returns (img, gtruth)
+          # img: [H, W, C], in RGB space
+          # gtruth: str
+        """
+        assert idx >= 0 and idx < self.size(), "Bad index"
         name = self.namelist[idx]
-        return self.reader.decode_image(name), \
-            self.vocabulary.index_by_class(HWDBDatasetHelper._get_class(name))
-    
-    def size(self):
+        meta = name.split('/')[1]
+        _, _, gtruth = parse_meta(meta)
+        img = self.reader.decode_image(name)
+        return img, gtruth
+
+    def size(self) -> int:
         return len(self.namelist)
-
-    def get_all_class_items(self, idx):
-        cls = self.vocabulary.class_by_index(idx)
-        return self.index[cls]
-    
-    def most_common_classes(self, n=None):
-        return self.counter.most_common(n)
-    
-    def train_val_split(self, train_part=0.8, seed=42):
-        rnd = np.random.default_rng(seed)
-        permutation = rnd.permutation(len(self.namelist))
-        train_part = int(len(permutation) * train_part)
-        train_names = [self.namelist[idx] for idx in permutation[:train_part]]
-        val_names = [self.namelist[idx] for idx in permutation[train_part:]]
-
-        return HWDBDatasetHelper(self.reader, self.prefix, self.vocabulary, train_names),\
-            HWDBDatasetHelper(self.reader, self.prefix, self.vocabulary, val_names)
-    
-    @staticmethod
-    def _get_class(name):
-        return Path(name).parent.name
-    
-    def _build_index(self):
-        classes = set()
-        for idx, name in enumerate(self.namelist):
-            cls = HWDBDatasetHelper._get_class(name)
-            classes.add(cls)
-            self.index[cls].append(idx)
-            self.counter.update([cls])
-        
-        if self.vocabulary is None:
-            self.vocabulary = Vocabulary(classes)
