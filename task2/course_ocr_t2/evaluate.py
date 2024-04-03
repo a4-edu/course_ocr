@@ -1,21 +1,23 @@
 from pathlib import Path
+import editdistance
 
 def evaluate(gt_path, pred_path):
     gt = dict()
     with open(gt_path) as gt_f:
         for line in gt_f:
-            name, cls = line.strip().split()
-            gt[name] = cls
+            name, gtruth = line.strip().split()
+            gt[name] = gtruth
     
-    n_good = 0
-    n_all = len(gt)
+    ed_sum = 0
+    len_sum = 0
     with open(pred_path) as pred_f:
         for line in pred_f:
-            name, cls = line.strip().split()
-            if cls == gt[name]:
-                n_good += 1
+            name, pred = line.strip().split()
+            ed = editdistance.eval(pred, gt[name])
+            ed_sum += ed
+            len_sum += len(gtruth)
     
-    return n_good / n_all
+    return 1 - ed_sum / len_sum
 
 
 def _run_evaluation():
@@ -23,7 +25,7 @@ def _run_evaluation():
     gt_path = base / 'gt.txt'
     pred_path = base / 'pred.txt'
     score = evaluate(gt_path, pred_path)
-    print('Accuracy = {:1.4f}'.format(score))
+    print('Char Accuracy = {:1.4f}'.format(score * 100))
 
 
 if __name__ == '__main__':
